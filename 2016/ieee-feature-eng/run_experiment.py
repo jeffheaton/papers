@@ -1,4 +1,10 @@
 __author__ = 'jheaton'
+# This Python script was used to collect the data for following paper/conference:
+#
+# Heaton, J. (2016, April). An Empirical Analysis of Feature Engineering for Predictive Modeling.
+# In SoutheastCon 2015 (pp. 1-6). IEEE.
+#
+# http://www.jeffheaton.com
 
 import math
 import numpy as np
@@ -376,17 +382,15 @@ def run_experiment(writer, name, generate_data):
         data.dump(name)
 
     # Define model types to use
-    clfs = [
+    models = [
         svr_grid(),
         RandomForestRegressor(n_estimators=100),
-        ######SVR(gamma=0.001, C=100),
         GradientBoostingRegressor(n_estimators=100, learning_rate=0.1, max_depth=10, random_state=0, verbose=VERBOSE),
         neural_network_regression(data)
     ]
 
-    for clf in clfs:
-        eval_data(writer, name, clf, data)
-
+    for model in models:
+        eval_data(writer, name, model, data)
 
 def main():
     with codecs.open("results.csv", "w", "utf-8") as fp:
