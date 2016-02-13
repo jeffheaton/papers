@@ -1,3 +1,10 @@
+# This Python script was used to collect the data for following paper/conference:
+#
+# Heaton, J. (2016, April). Comparing Dataset Characteristics that Favor the Apriori, 
+# Eclat or FP-Growth Frequent Itemset Mining Algorithms. In SoutheastCon 2015 (pp. 1-6). IEEE.
+#
+# http://www.jeffheaton.com
+#
 __author__ = 'jheaton'
 
 import os

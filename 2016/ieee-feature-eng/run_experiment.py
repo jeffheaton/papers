@@ -2,7 +2,7 @@ __author__ = 'jheaton'
 # This Python script was used to collect the data for following paper/conference:
 #
 # Heaton, J. (2016, April). An Empirical Analysis of Feature Engineering for Predictive Modeling.
-# In SoutheastCon 2015 (pp. 1-6). IEEE.
+# In SoutheastCon 2016 (pp. 1-6). IEEE.
 #
 # http://www.jeffheaton.com
 
