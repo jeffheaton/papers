@@ -7,11 +7,11 @@ __author__ = 'jheaton'
 # http://www.jeffheaton.com
 
 import math
-import numpy as np
 import time
 import codecs
 import csv
 import multiprocessing
+import numpy as np
 from sklearn.metrics import mean_squared_error
 from sklearn.ensemble.forest import RandomForestRegressor
 from sklearn.svm import SVR
@@ -19,10 +19,10 @@ from sklearn.ensemble.gradient_boosting import GradientBoostingRegressor
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import GridSearchCV
-from keras.models import Sequential
-from keras.layers.core import Dense, Activation
-from keras.callbacks import EarlyStopping
-from keras.wrappers.scikit_learn import KerasRegressor
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.wrappers.scikit_learn import KerasRegressor
 
 # Global parameters
 TRAIN_SIZE = 10000
@@ -34,21 +34,6 @@ FAIL_ON_NAN = False
 NORMALIZE_ALL = False
 DUMP_FILES = True
 THREADS = multiprocessing.cpu_count()
-
-# Another stopping class for deep learning.  If the error/loss falls
-# below the specified threshold, we are done.
-class AcceptLoss(object):
-    def __init__(self, min=0.01):
-        self.min = min
-
-    def __call__(self, nn, train_history):
-        current_valid = train_history[-1]['valid_loss']
-
-        if current_valid < self.min:
-            if VERBOSE > 0:
-                print("Acceptable loss")
-            raise StopIteration()
-
 
 # Holds the data for the experiments.  This allows the data to be represented in
 # the forms needed for several model types.
@@ -84,9 +69,11 @@ class DataHolder:
 
     # Dump data to CSV files for examination.
     def dump(self, base):
-        header = ",".join(["x" + str(x) for x in range(1, 1 + self.X_train.shape[1])])
+        header = ",".join(["x" + str(x)
+                           for x in range(1, 1 + self.X_train.shape[1])])
         header += ","
-        header += ",".join(["y" + str(x) for x in range(1, 1 + self.y_train_nn.shape[1])])
+        header += ",".join(["y" + str(x)
+                            for x in range(1, 1 + self.y_train_nn.shape[1])])
 
         np.savetxt(base + "_train.csv",
                    np.hstack((self.X_train, self.y_train_nn)),
@@ -118,7 +105,9 @@ def generate_data_counts(rows):
     x_array = []
     y_array = []
 
-    for i in range(rows):
+    i = 0
+    while i < rows:
+        i += 1
         x = [0] * 50
         y = np.random.randint(0, len(x))
 
@@ -140,7 +129,7 @@ def generate_data_quad(rows):
     x_array = []
     y_array = []
 
-    while (len(x_array) < rows):
+    while len(x_array) < rows:
         a = float(np.random.randint(-10, 10))
         b = float(np.random.randint(-10, 10))
         c = float(np.random.randint(-10, 10))
@@ -164,7 +153,7 @@ def generate_data_bmi(rows):
     x_array = []
     y_array = []
 
-    while (len(x_array) < rows):
+    while len(x_array) < rows:
         m = float(np.random.randint(25, 200))
         h = float(np.random.uniform(1.5, 2.0))
         y = m / (h * h)
@@ -185,10 +174,8 @@ def generate_data_fn2(rows, cnt, x_low, x_high, fn):
     x_array = []
     y_array = []
 
-    while (len(x_array) < rows):
-        args = []
-        for i in range(cnt):
-            args.append(np.random.uniform(x_low, x_high))
+    while len(x_array) < rows:
+        args = [np.random.uniform(x_low, x_high)] * cnt
 
         try:
             y = fn(*args)
@@ -206,7 +193,7 @@ def generate_data_ratio(rows):
     x_array = []
     y_array = []
 
-    while (len(x_array) < rows):
+    while len(x_array) < rows:
         x = [
             np.random.uniform(0, 1),
             np.random.uniform(0.01, 1)]
@@ -226,7 +213,7 @@ def generate_data_diff(rows):
     x_array = []
     y_array = []
 
-    while (len(x_array) < rows):
+    while len(x_array) < rows:
         x = [
             np.random.uniform(0, 1),
             np.random.uniform(0.01, 1)]
@@ -261,7 +248,8 @@ def svr_grid():
         'gamma': [1e-1, 1, 1e1]
 
     }
-    clf = GridSearchCV(SVR(kernel='rbf'), verbose=VERBOSE, n_jobs=THREADS, param_grid=param_grid)
+    clf = GridSearchCV(SVR(kernel='rbf'), cv=5, verbose=VERBOSE,
+                       n_jobs=THREADS, param_grid=param_grid)
     return clf
 
 
@@ -288,7 +276,8 @@ def eval_data(writer, name, model, data):
         start_time = time.time()
         if 'KerasRegressor' in model_name:
 
-            monitor = EarlyStopping(monitor='val_loss', min_delta=1e-3, patience=20, verbose=v, mode='auto')
+            monitor = EarlyStopping(
+                monitor='val_loss', min_delta=1e-3, patience=20, verbose=v, mode='auto')
             model.fit(data.X_train, data.y_train_nn,
                       validation_data=(data.X_validate, data.y_validate_nn),
                       callbacks=[monitor], verbose=v, epochs=100000)
@@ -297,7 +286,7 @@ def eval_data(writer, name, model, data):
         elapsed_time = hms_string(time.time() - start_time)
 
         if 'KerasRegressor' in model_name:
-            pred = model.predict(X_validate,verbose=v)
+            pred = model.predict(X_validate, verbose=v)
         else:
             pred = model.predict(X_validate)
 
@@ -334,7 +323,8 @@ def run_experiment(writer, name, generate_data):
     models = [
         svr_grid(),
         RandomForestRegressor(n_estimators=100),
-        GradientBoostingRegressor(n_estimators=100, learning_rate=0.1, max_depth=10, random_state=0, verbose=VERBOSE),
+        GradientBoostingRegressor(
+            n_estimators=100, learning_rate=0.1, max_depth=10, random_state=0, verbose=VERBOSE),
         KerasRegressor(build_fn=neural_network_regression, data=data)
     ]
 
@@ -349,14 +339,20 @@ def main():
         start_time = time.time()
         run_experiment(writer, "counts", generate_data_counts)  # 1
         run_experiment(writer, "quad", generate_data_quad)  # 2
-        run_experiment(writer, "sqrt", generate_data_fn(1, 1.0, 100.0, math.sqrt))  # 3
-        run_experiment(writer, "log", generate_data_fn(1, 1.0, 100.0, math.log))  # 4
-        run_experiment(writer, "pow", generate_data_fn(1, 1.0, 10.0, lambda x: x ** 2))  # 5
+        run_experiment(writer, "sqrt", generate_data_fn(
+            1, 1.0, 100.0, math.sqrt))  # 3
+        run_experiment(writer, "log", generate_data_fn(
+            1, 1.0, 100.0, math.log))  # 4
+        run_experiment(writer, "pow", generate_data_fn(
+            1, 1.0, 10.0, lambda x: x ** 2))  # 5
         run_experiment(writer, "ratio", generate_data_ratio)  # 6
         run_experiment(writer, "diff", generate_data_diff)  # 7
-        run_experiment(writer, "r_poly", generate_data_fn(1, 1.0, 10.0, lambda x: 1 / (5 * x + 8 * x ** 2)))  # 8
-        run_experiment(writer, "poly", generate_data_fn(1, 0.0, 2.0, lambda x: 1 + 5 * x + 8 * x ** 2))  # 9
-        run_experiment(writer, "r_diff", generate_data_fn(4, 1.0, 10.0, lambda a, b, c, d: ((a - b) / (c - d))))  # 10
+        run_experiment(writer, "r_poly", generate_data_fn(
+            1, 1.0, 10.0, lambda x: 1 / (5 * x + 8 * x ** 2)))  # 8
+        run_experiment(writer, "poly", generate_data_fn(
+            1, 0.0, 2.0, lambda x: 1 + 5 * x + 8 * x ** 2))  # 9
+        run_experiment(writer, "r_diff", generate_data_fn(
+            4, 1.0, 10.0, lambda a, b, c, d: ((a - b) / (c - d))))  # 10
 
         # Others to try, not in the paper.
         # run_experiment(writer, "sum", generate_data_fn(10, 0.0, 10.0, lambda *args: np.sum(args)))
