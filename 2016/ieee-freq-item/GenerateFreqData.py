@@ -9,6 +9,8 @@
 # Generate benchmark data for frequent itemset mining.
 __author__ = 'jheaton'
 import random
+import csv
+from tqdm import tqdm
 
 def sizeof_fmt(num):
     for x in ['','k','m','g']:
@@ -17,44 +19,53 @@ def sizeof_fmt(num):
         num /= 1000.0
     return "%3.1f%s" % (num, 't')
 
-# These paramaters can be changed to determine the type of data to generate.
-# How many baskets, or transactions
-BASKET_COUNT = 10
-# Maximum number of items per basket
-MAX_ITEMS_PER_BASKET = 7
-# The number of unique items
-ITEM_COUNT = 100
-# The number of frequent itemsets
-NUM_FREQUENT_ITEMSETS = 2
-# The probability of a basket containing a frequent itemset.
-PROB_FREQUENT = 0.5
+def generate_itemset(row_count, max_per_basket, num_freq_sets, item_count, prob_frequent):
+    '''
+    Generate a dataset of frequent items. These paramaters can be changed to 
+    determine the type of data to generate.
 
-# Generate the data
-pop_frequent = ["F"+str(n) for n in range(0,MAX_ITEMS_PER_BASKET)]
-pop_regular = ["I"+str(n) for n in range(MAX_ITEMS_PER_BASKET,ITEM_COUNT)]
+    :param int row_count: The number of rows in the dataset.
+    :param int max_per_basket: Maximum number of items per basket.
+    :param int num_freq_sets: The number of unique frequent item sets.
+    :param int item_count: The number of unique items.
+    :param float prob_frequent: The probability of a basket containing a frequent itemset.
+    '''
+    # Generate the data
+    pop_frequent = ["F"+str(n) for n in range(0,max_per_basket)]
+    pop_regular = ["I"+str(n) for n in range(max_per_basket,item_count)]
+    freq_itemsets = []
 
+    # Create a filename that encodes the max_per_basket and basket_count into
+    # the filename.
+    filename = str(prob_frequent)+"_tsz" \
+        + str(max_per_basket)+'_tct' \
+         +sizeof_fmt(row_count)+'.txt'
 
-freq_itemsets = []
+    for i in tqdm(range(num_freq_sets),desc=f"{filename}:pass 1/2"):
+        cnt = random.randint(1,max_per_basket)
+        freq_itemsets.append(random.sample(pop_frequent,cnt))
 
-for i in range(NUM_FREQUENT_ITEMSETS):
-    cnt = random.randint(1,MAX_ITEMS_PER_BASKET)
-    freq_itemsets.append(random.sample(pop_frequent,cnt))
+    with open(filename, 'w') as f:
+        for i in tqdm(range(row_count),desc=f"{filename}:pass 2/2"):
+            line = []
 
-# Create a filename that encodes the MAX_ITEMS_PER_BASKET and BASKET_COUNT into
-# the filename.
-with open('c:\\freq\\fprob'+str(PROB_FREQUENT)+"_tsz"
-        +str(MAX_ITEMS_PER_BASKET)+'_tct'
-        +sizeof_fmt(BASKET_COUNT)+'.txt', 'w') as f:
-    for i in range(BASKET_COUNT):
-        line = []
+            cnt = random.randint(1,max_per_basket)
+            if random.random()<=prob_frequent:
+                idx = random.randint(0,len(freq_itemsets)-1)
+                for j in range(len(freq_itemsets[idx])):
+                    line.append(freq_itemsets[idx][j])
 
-        cnt = random.randint(1,MAX_ITEMS_PER_BASKET)
-        if random.random()<=PROB_FREQUENT:
-            idx = random.randint(0,len(freq_itemsets)-1)
-            for j in range(len(freq_itemsets[idx])):
-                line.append(freq_itemsets[idx][j])
+            needed = max(0,cnt - len(line))
+            line = line + random.sample(pop_regular,needed)
 
-        needed = max(0,cnt - len(line))
-        line = line + random.sample(pop_regular,needed)
+            f.write(" ".join(line)+"\n")
 
-        f.write(" ".join(line)+"\n")
+random.seed(1000)
+ROWS = 10000000
+generate_itemset(1000, 10, 100, 50000, 0.5)
+
+for i in range(10,110,10):
+    generate_itemset(ROWS, i, 100, 50000, 0.5)
+
+for i in range(1,9):
+    generate_itemset(ROWS, 50, 100, 50000, i/10.0)
