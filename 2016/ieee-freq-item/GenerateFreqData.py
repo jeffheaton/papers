@@ -62,7 +62,7 @@ def generate_itemset(row_count, max_per_basket, num_freq_sets, item_count, prob_
 
 random.seed(1000)
 ROWS = 10000000
-generate_itemset(1000, 10, 100, 50000, 0.5)
+#generate_itemset(1000, 10, 100, 50000, 0.5)
 
 for i in range(10,110,10):
     generate_itemset(ROWS, i, 100, 50000, 0.5)
